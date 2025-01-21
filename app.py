@@ -6,16 +6,16 @@ import sqlite3
 import datetime
 
 # Constants for feeding notifications
-NOTIFICATION_JOB_QUEUE_INTERVAL_SECONDS = 300  # Interval to check feeding status (5 minutes)
-NOTIFICATION_JOB_QUEUE_FIRST_SECONDS = 10  # Initial delay for the first check
-NOTIFY_IF_UNFED_FOR_SECONDS = 10800  # Notify if no feeding for 3 hours (10800 seconds)
+NOTIFICATION_JOB_QUEUE_INTERVAL_SECONDS = 300
+NOTIFICATION_JOB_QUEUE_FIRST_SECONDS = 10
+NOTIFY_IF_UNFED_FOR_SECONDS = 10800
 
 # Get the Telegram bot token
 BOT_TOKEN = "7790382746:AAEhGPg2qoNnboGQsntZzNMcez6-YeL7LEs"
 
 # Initialize database
 def init_db():
-    conn = sqlite3.connect("baby_tracker.db")
+    conn = sqlite3.connect("baby_tracker.db", check_same_thread=False)
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS activities (
@@ -31,7 +31,7 @@ def init_db():
 # Start command
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "\ud83d\udc76 Hi! I'm your BabyTrackerBot. Use /help to see what I can do for you!"
+        "👶 Hi! I'm your BabyTrackerBot. Use /help to see what I can do for you!"
     )
 
 # Help command
@@ -54,12 +54,16 @@ async def log_feed(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     amount = context.args[0]
-    conn = sqlite3.connect("baby_tracker.db")
+    if not amount.endswith("ml"):
+        await update.message.reply_text("Please specify the amount in ml (e.g., 150ml).")
+        return
+
+    conn = sqlite3.connect("baby_tracker.db", check_same_thread=False)
     cursor = conn.cursor()
     cursor.execute("INSERT INTO activities (type, amount) VALUES (?, ?)", ("feed", amount))
     conn.commit()
     conn.close()
-    await update.message.reply_text(f"\u2705 Milk intake logged: {amount}")
+    await update.message.reply_text(f"✅ Milk intake logged: {amount}")
 
 # Log diaper changes
 async def log_diaper(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -72,12 +76,12 @@ async def log_diaper(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Please specify 'wet' or 'dirty'.")
         return
 
-    conn = sqlite3.connect("baby_tracker.db")
+    conn = sqlite3.connect("baby_tracker.db", check_same_thread=False)
     cursor = conn.cursor()
     cursor.execute("INSERT INTO activities (type, amount) VALUES (?, ?)", ("diaper", diaper_type))
     conn.commit()
     conn.close()
-    await update.message.reply_text(f"\u2705 Diaper change logged: {diaper_type}")
+    await update.message.reply_text(f"✅ Diaper change logged: {diaper_type}")
 
 # Log sleep
 async def log_sleep(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -91,16 +95,16 @@ async def log_sleep(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Please enter a valid number of hours.")
         return
 
-    conn = sqlite3.connect("baby_tracker.db")
+    conn = sqlite3.connect("baby_tracker.db", check_same_thread=False)
     cursor = conn.cursor()
     cursor.execute("INSERT INTO activities (type, amount) VALUES (?, ?)", ("sleep", str(hours)))
     conn.commit()
     conn.close()
-    await update.message.reply_text(f"\u2705 Sleep logged: {hours} hours")
+    await update.message.reply_text(f"✅ Sleep logged: {hours} hours")
 
 # View Last Feeding
 async def view_last_feeding(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    conn = sqlite3.connect("baby_tracker.db")
+    conn = sqlite3.connect("baby_tracker.db", check_same_thread=False)
     cursor = conn.cursor()
     cursor.execute("""
         SELECT amount, timestamp FROM activities
@@ -112,7 +116,7 @@ async def view_last_feeding(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if last_feed:
         amount, timestamp = last_feed
-        response = f"\ud83c\udf7c Last feeding:\n- Amount: {amount}\n- Time: {timestamp}"
+        response = f"🍼 Last feeding:\n- Amount: {amount}\n- Time: {timestamp}"
     else:
         response = "No feedings recorded yet. Use /log_feed <amount> to record a feeding."
 
@@ -122,7 +126,7 @@ async def view_last_feeding(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def feeding_statistics(update: Update, context: ContextTypes.DEFAULT_TYPE):
     now = datetime.datetime.now()
     past_24_hours = now - datetime.timedelta(hours=24)
-    conn = sqlite3.connect("baby_tracker.db")
+    conn = sqlite3.connect("baby_tracker.db", check_same_thread=False)
     cursor = conn.cursor()
     cursor.execute("""
         SELECT timestamp, amount FROM activities
@@ -133,7 +137,7 @@ async def feeding_statistics(update: Update, context: ContextTypes.DEFAULT_TYPE)
     conn.close()
 
     if feedings:
-        response = "\ud83d\udcca Feeding Statistics (Last 24 Hours):\n"
+        response = "📊 Feeding Statistics (Last 24 Hours):\n"
         intervals = []
         previous_time = None
         total_feed = 0
@@ -155,13 +159,14 @@ async def feeding_statistics(update: Update, context: ContextTypes.DEFAULT_TYPE)
         response = "No feedings recorded in the last 24 hours. Use /log_feed <amount> to start tracking."
 
     await update.message.reply_text(response)
+
 # Daily summary function
 async def daily_summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
     today = datetime.date.today()
     start_of_day = f"{today} 00:00:00"
     end_of_day = f"{today} 23:59:59"
 
-    conn = sqlite3.connect("baby_tracker.db")
+    conn = sqlite3.connect("baby_tracker.db", check_same_thread=False)
     cursor = conn.cursor()
     cursor.execute("""
         SELECT type, COUNT(*), SUM(CAST(amount AS FLOAT)) FROM activities
@@ -186,7 +191,7 @@ async def daily_summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Feeding Notification
 def check_feeding_notification(context: ContextTypes.DEFAULT_TYPE):
-    conn = sqlite3.connect("baby_tracker.db")
+    conn = sqlite3.connect("baby_tracker.db", check_same_thread=False)
     cursor = conn.cursor()
     cursor.execute("""
         SELECT timestamp FROM activities
@@ -196,19 +201,20 @@ def check_feeding_notification(context: ContextTypes.DEFAULT_TYPE):
     last_feed = cursor.fetchone()
     conn.close()
 
-    if last_feed:
-        last_feed_time = datetime.datetime.fromisoformat(last_feed[0])
-        time_since_last_feed = (datetime.datetime.now() - last_feed_time).total_seconds()
-
-        if time_since_last_feed > NOTIFY_IF_UNFED_FOR_SECONDS:
-            context.bot.send_message(
-                chat_id=context.job.chat_id,
-                text="\ud83d\udd14 Reminder: It's been over 3 hours since the last feeding. Please check on Emilia!"
-            )
-    else:
+    if not last_feed:
         context.bot.send_message(
             chat_id=context.job.chat_id,
-            text="\ud83d\udd14 Reminder: No feedings have been logged yet. Please record feeding times."
+            text="🔔 Reminder: No feedings have been logged yet. Please record feeding times."
+        )
+        return
+
+    last_feed_time = datetime.datetime.fromisoformat(last_feed[0])
+    time_since_last_feed = (datetime.datetime.now() - last_feed_time).total_seconds()
+
+    if time_since_last_feed > NOTIFY_IF_UNFED_FOR_SECONDS:
+        context.bot.send_message(
+            chat_id=context.job.chat_id,
+            text="🔔 Reminder: It's been over 3 hours since the last feeding. Please check on Emilia!"
         )
 
 # Set up the notification job
@@ -220,7 +226,11 @@ async def start_notifications(update: Update, context: ContextTypes.DEFAULT_TYPE
         first=NOTIFICATION_JOB_QUEUE_FIRST_SECONDS,
         chat_id=chat_id
     )
-    await update.message.reply_text("\u2705 Notifications for feeding reminders have been enabled!")
+    await update.message.reply_text("✅ Notifications for feeding reminders have been enabled!")
+
+# Error handler
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
+    print(f"Exception while handling update: {context.error}")
 
 # Initialize bot
 if __name__ == "__main__":
@@ -236,6 +246,8 @@ if __name__ == "__main__":
     application.add_handler(CommandHandler("view_last_feeding", view_last_feeding))
     application.add_handler(CommandHandler("feeding_statistics", feeding_statistics))
     application.add_handler(CommandHandler("start_notifications", start_notifications))
+
+    application.add_error_handler(error_handler)
 
     print("Bot is running...")
     application.run_polling()
