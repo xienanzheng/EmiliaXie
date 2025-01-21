@@ -155,6 +155,34 @@ async def feeding_statistics(update: Update, context: ContextTypes.DEFAULT_TYPE)
         response = "No feedings recorded in the last 24 hours. Use /log_feed <amount> to start tracking."
 
     await update.message.reply_text(response)
+# Daily summary function
+async def daily_summary(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    today = datetime.date.today()
+    start_of_day = f"{today} 00:00:00"
+    end_of_day = f"{today} 23:59:59"
+
+    conn = sqlite3.connect("baby_tracker.db")
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT type, COUNT(*), SUM(CAST(amount AS FLOAT)) FROM activities
+        WHERE timestamp BETWEEN ? AND ?
+        GROUP BY type
+    """, (start_of_day, end_of_day))
+    summary = cursor.fetchall()
+    conn.close()
+
+    response = "📋 Today's Summary:\n"
+    for row in summary:
+        if row[0] == "feed":
+            response += f"- Milk intake: {row[2]} ml\n"
+        elif row[0] == "diaper":
+            response += f"- Diaper changes: {row[1]} times\n"
+        elif row[0] == "sleep":
+            response += f"- Sleep: {row[2]} hours\n"
+
+    if not summary:
+        response += "No activities logged today. Start tracking now!"
+    await update.message.reply_text(response)
 
 # Feeding Notification
 def check_feeding_notification(context: ContextTypes.DEFAULT_TYPE):
