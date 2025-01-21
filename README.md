@@ -21,7 +21,7 @@ Set Environment Variables:
 After uploading your code, go to the Environment tab.
 Add a new variable:
 Key: BOT_API_TOKEN
-Value: Your token from BotFather (e.g., 7790382746:AAEhGPg2qoNnboGQsntZzNMcez6-YeL7LEs).
+Value: Your token from BotFather (e.g., 7790382746:QsntZzNMcez6-YeL7LEs).
 Specify the Start Command:
 
 Set the start command to run your bot:
