@@ -25,10 +25,7 @@ Value: Your token from BotFather (e.g., 7790382746:QsntZzNMcez6-YeL7LEs).
 Specify the Start Command:
 
 Set the start command to run your bot:
-bash
-Copy
-Edit
-python baby_tracker_bot.py
+python app.py
 Step 3: Add Dependencies
 Create a requirements.txt file:
 
@@ -48,6 +45,6 @@ Render will build and deploy your bot.
 Check the logs in the Render dashboard to ensure there are no errors.
 Step 5: Test the Bot
 Open Telegram and interact with your bot using its username.
-Send commands like /start and /log_feed 150ml to confirm it’s working.
+Send commands like /start and /log_activity <code> feed 150 to confirm it’s working.
 Keep the Bot Running
 Render’s free tier will keep the bot online continuously. If you encounter any issues, check the logs for errors or let me know, and I’ll assist you further!

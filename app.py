@@ -11,8 +11,8 @@ NOTIFICATION_JOB_QUEUE_INTERVAL_SECONDS = 300
 NOTIFICATION_JOB_QUEUE_FIRST_SECONDS = 10
 NOTIFY_IF_UNFED_FOR_SECONDS = 10800
 
-# Get the Telegram bot token
-BOT_TOKEN = "7790382746:AAEhGPg2qoNnboGQsntZzNMcez6-YeL7LEs"
+# Get the Telegram bot token from environment variable
+BOT_TOKEN = os.getenv("BOT_API_TOKEN")
 
 # Initialize database
 def init_db():
@@ -240,6 +240,11 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
 # Initialize bot
 if __name__ == "__main__":
     init_db()
+
+    if not BOT_TOKEN:
+        raise RuntimeError(
+            "BOT_API_TOKEN environment variable not set. Please provide your Telegram bot token."
+        )
 
     application = Application.builder().token(BOT_TOKEN).build()
     application.add_handler(CommandHandler("start", start))
